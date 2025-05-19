@@ -1,136 +1,122 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sat May 17 21:32:59 2025
-
-@author: peaco
-"""
+# AI PDF Summarizer - Human-style code
 
 import streamlit as st
 import PyPDF2
 import requests
 
-# Use your API key securely from Streamlit secrets
+# API key - stored in secrets
 API_KEY = st.secrets["OPENROUTER_API_KEY"]
 
-# Extract text from PDF
-def extract_text_from_pdf(file):
-    reader = PyPDF2.PdfReader(file)
-    text = ""
-    for page in reader.pages:
-        page_text = page.extract_text()
-        if page_text:
-            text += page_text + "\n"
-    return text
+# Grab text from a PDF
+def get_pdf_text(pdf_file):
+    reader = PyPDF2.PdfReader(pdf_file)
+    full_text = ''
+    for pg in reader.pages:
+        content = pg.extract_text()
+        if content:
+            full_text += content + "\n"
+    return full_text
 
-# Query OpenRouter LLM
-def query_llm(prompt, model="mistralai/mixtral-8x7b-instruct"):
-    url = "https://openrouter.ai/api/v1/chat/completions"
+# Talk to the LLM
+def call_llm_api(prompt, model_name="mistralai/mixtral-8x7b-instruct"):
+    endpoint = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json"
     }
     payload = {
-        "model": model,
+        "model": model_name,
         "messages": [
             {"role": "system", "content": "You are an academic research assistant."},
             {"role": "user", "content": prompt}
         ]
     }
-    response = requests.post(url, json=payload, headers=headers)
-    result = response.json()
-    if "choices" in result:
-        return result['choices'][0]['message']['content']
-    else:
-        raise Exception(f"LLM API error: {result}")
 
-# Prompt builder
-def build_prompt(text, style, language, length):
-    style_instruction = {
+    resp = requests.post(endpoint, headers=headers, json=payload)
+    data = resp.json()
+
+    if "choices" in data:
+        return data['choices'][0]['message']['content']
+    else:
+        raise Exception(f"Error from API: {data}")
+
+# Build the prompt string
+def make_prompt(txt, s, lang, ln):
+    style_map = {
         "Detailed": "Provide a comprehensive and detailed summary.",
         "Bullet Points": "Summarize the content in clear bullet points.",
         "Key Findings": "List only the key findings and conclusions."
-    }[style]
+    }
 
-    length_instruction = {
+    len_map = {
         "Brief": "Keep the summary concise and under 100 words.",
         "Medium": "Make the summary about 200 words.",
         "Full": "Do not limit the length — cover all important aspects."
-    }[length]
+    }
 
     return (
-        f"Summarize the following academic paper. {style_instruction} "
-        f"{length_instruction} Write the output in {language}.\n\n{text}"
+        f"Summarize the following academic paper. {style_map[s]} "
+        f"{len_map[ln]} Write the output in {lang}.\n\n{txt}"
     )
 
-# Chunk text to fit LLM limits
-def chunk_text(text, max_chunk_size=4000, overlap=500):
-    chunks = []
+# Break big text into smaller chunks
+def split_into_chunks(text, max_len=4000, overlap=500):
+    pieces = []
     start = 0
-    text_len = len(text)
-    while start < text_len:
-        end = min(start + max_chunk_size, text_len)
+    while start < len(text):
+        end = min(start + max_len, len(text))
         chunk = text[start:end]
-        chunks.append(chunk)
-        start += max_chunk_size - overlap
-    return chunks
+        pieces.append(chunk)
+        start += max_len - overlap
+    return pieces
 
-# Streamlit UI
-st.set_page_config(page_title="AI PDF Summarizer with Chunking", layout="centered")
-st.title("📄 AI Research Paper Summarizer with Chunking")
+# App UI
+st.set_page_config(page_title="AI PDF Summarizer", layout="centered")
+st.title("AI Research Paper Summarizer")
 
-st.markdown("Upload a PDF and get a detailed summary using a free LLM via OpenRouter.")
+st.write("Upload a PDF and get a summary using OpenRouter.")
 
-uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
+uploaded_file = st.file_uploader("Choose a PDF", type="pdf")
 
-language = st.selectbox("🔠 Choose output language", [
-    "English", "Spanish", "French", "German", "Hindi", "Chinese", "Arabic"
-])
+lang = st.selectbox("Output Language", ["English", "Spanish", "French", "German", "Hindi", "Chinese", "Arabic"])
+style = st.selectbox("Summary Style", ["Detailed", "Bullet Points", "Key Findings"])
+length = st.radio("Summary Length", ["Brief", "Medium", "Full"])
 
-style = st.selectbox("🧾 Choose summarization style", [
-    "Detailed", "Bullet Points", "Key Findings"
-])
-
-length = st.radio("📏 Choose summary length", ["Brief", "Medium", "Full"])
-
+# Main logic
 if uploaded_file is not None:
-    with st.spinner("Extracting text from PDF..."):
-        text = extract_text_from_pdf(uploaded_file)
+    with st.spinner("Reading PDF..."):
+        text = get_pdf_text(uploaded_file)
 
     if len(text) > 20000:
-        st.warning(f"Your document is quite long ({len(text)} characters). It will be summarized in chunks for best results.")
+        st.warning(f"PDF is long ({len(text)} chars). Using chunking to summarize in parts.")
 
-    if st.button("🧠 Summarize"):
-        with st.spinner("Summarizing in chunks..."):
-            chunks = chunk_text(text)
-            chunk_summaries = []
+    if st.button("Summarize"):
+        with st.spinner("Working..."):
+            chunks = split_into_chunks(text)
+            summaries = []
 
-            for i, chunk in enumerate(chunks, 1):
-                st.info(f"Processing chunk {i} of {len(chunks)}")
-                prompt = build_prompt(chunk, style, language, length)
+            for idx, part in enumerate(chunks, 1):
+                st.write(f"Summarizing chunk {idx}/{len(chunks)}...")
+                p = make_prompt(part, style, lang, length)
                 try:
-                    summary = query_llm(prompt)
-                    chunk_summaries.append(summary)
-                except Exception as e:
-                    st.error(f"Chunk {i} failed: {e}")
-                    chunk_summaries.append("❌ Error generating summary for this chunk.")
+                    sm = call_llm_api(p)
+                    summaries.append(sm)
+                except Exception as err:
+                    st.error(f"Problem with chunk {idx}: {err}")
+                    summaries.append("Error generating summary for this part.")
 
-            # Combine chunk summaries
-            combined_summary_text = "\n\n".join(chunk_summaries)
+            full_summary = "\n\n".join(summaries)
 
-            # Optionally, summarize the combined summary if length is brief or medium
             if length != "Full":
-                with st.spinner("Generating final combined summary..."):
-                    final_prompt = (
-                        f"Summarize the following combined summaries "
-                        f"into a {length.lower()} summary in {language}:\n\n{combined_summary_text}"
-                    )
-                    try:
-                        final_summary = query_llm(final_prompt)
-                        st.subheader(f"📝 Final Summary ({language}, {style}, {length})")
-                        st.write(final_summary)
-                    except Exception as e:
-                        st.error(f"Failed to generate final summary: {e}")
-                        st.write(combined_summary_text)
+                st.write("Combining all chunk summaries...")
+                final_p = f"Please create a {length.lower()} summary in {lang} from the following:\n\n{full_summary}"
+                try:
+                    final_summary = call_llm_api(final_p)
+                    st.subheader(f"Final Summary ({lang})")
+                    st.write(final_summary)
+                except Exception as err:
+                    st.error("Final summarization failed.")
+                    st.write(full_summary)
             else:
-                st.subheader(f"📝 Combined Chunk Summaries ({language}, {style}, {length})")
-                st.write(combined_summary_text)
+                st.subheader("Combined Chunk Summaries")
+                st.write(full_summary)
