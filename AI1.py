@@ -66,9 +66,19 @@ def query_llm(prompt, model="mistralai/mixtral-8x7b-instruct"):
             {"role": "user", "content": prompt}
         ]
     }
+
     response = requests.post(url, json=payload, headers=headers)
-    result = response.json()
-    return result['choices'][0]['message']['content']
+
+    try:
+        result = response.json()
+        # Check for 'choices' key
+        if 'choices' in result and len(result['choices']) > 0:
+            return result['choices'][0]['message']['content']
+        else:
+            return f"❌ Error from LLM: {result.get('error', 'No choices returned')}"
+    except Exception as e:
+        return f"❌ Failed to parse LLM response: {e}"
+
 
 # Streamlit App UI
 st.set_page_config(page_title="AI PDF Summarizer", layout="centered")
