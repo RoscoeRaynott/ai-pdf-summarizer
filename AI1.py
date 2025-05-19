@@ -88,19 +88,27 @@ style = st.selectbox("🧾 Choose summarization style", [
 # Length selection
 length = st.radio("📏 Choose summary length", ["Brief", "Medium", "Full"])
 
+#Error catch
+st.write(f"Style selected: {style}")
+st.write(f"Length selected: {length}")
+st.write(f"Language selected: {language}")
+
 # Prompt builder
 def build_prompt(text, style, language, length):
-    style_instruction = {
-        "Detailed": "Provide a comprehensive and detailed summary.",
-        "Bullet Points": "Summarize the content in clear bullet points.",
-        "Key Findings": "List only the key findings and conclusions."
-    }[style]
-
-    length_instruction = {
+    style_map = {
+    "Detailed": "Provide a comprehensive and detailed summary.",
+    "Bullet Points": "Summarize the content in clear bullet points.",
+    "Key Findings": "List only the key findings and conclusions."
+    }
+    style_instruction = style_map.get(style, "Provide a concise summary.")
+    
+    length_map = {
         "Brief": "Keep the summary concise and under 100 words.",
         "Medium": "Make the summary about 200 words.",
         "Full": "Do not limit the length — cover all important aspects."
-    }[length]
+    }
+    length_instruction = length_map.get(length, "Keep the summary concise.")
+
 
     return (
         f"Summarize the following academic paper. {style_instruction} "
