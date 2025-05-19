@@ -24,6 +24,10 @@ def summarize_in_chunks(text, style, language, length):
     progress_bar = st.progress(0)
 
     for i, chunk in enumerate(chunks):
+        #Error catch
+        st.write(f"Style selected: {style}")
+        st.write(f"Length selected: {length}")
+        st.write(f"Language selected: {language}")
         prompt = build_prompt(chunk, style, language, length)
         try:
             summary = query_llm(prompt)
@@ -87,11 +91,6 @@ style = st.selectbox("🧾 Choose summarization style", [
 
 # Length selection
 length = st.radio("📏 Choose summary length", ["Brief", "Medium", "Full"])
-
-#Error catch
-st.write(f"Style selected: {style}")
-st.write(f"Length selected: {length}")
-st.write(f"Language selected: {language}")
 
 # Prompt builder
 def build_prompt(text, style, language, length):
