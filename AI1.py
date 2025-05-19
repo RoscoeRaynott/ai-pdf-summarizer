@@ -134,15 +134,3 @@ if uploaded_file is not None:
             else:
                 st.subheader(f"📝 Combined Chunk Summaries ({language}, {style}, {length})")
                 st.write(combined_summary_text)
-
-'''
-# --- CV Entry Example ---
-st.markdown("---")
-st.markdown("### CV Entry Example")
-st.markdown("""
-- Developed an AI-powered PDF summarization web app using Streamlit and OpenRouter’s free LLM API.
-- Implemented chunk-based text processing to handle large academic papers efficiently.
-- Incorporated multi-language support and customizable summarization styles and lengths.
-- Deployed the app on Streamlit Cloud with secure API key management.
-""")
-'''
