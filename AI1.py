@@ -135,7 +135,7 @@ if uploaded_file is not None:
                 st.subheader(f"📝 Combined Chunk Summaries ({language}, {style}, {length})")
                 st.write(combined_summary_text)
 
-
+'''
 # --- CV Entry Example ---
 st.markdown("---")
 st.markdown("### CV Entry Example")
@@ -145,3 +145,4 @@ st.markdown("""
 - Incorporated multi-language support and customizable summarization styles and lengths.
 - Deployed the app on Streamlit Cloud with secure API key management.
 """)
+'''
