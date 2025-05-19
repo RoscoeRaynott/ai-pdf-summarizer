@@ -22,7 +22,7 @@ This is a customizable Streamlit web app that summarizes academic PDFs using LLM
 
 Click below to try the live app:
 
-[![Open in Streamlit]([https://yourname-ai-pdf-summarizer.streamlit.app](http://localhost:8501/))
+[![Open in Streamlit]([[https://yourname-ai-pdf-summarizer.streamlit.app](http://localhost:8501/)](https://ai-pdf-summarizer-yh9iuefpvoljvc9c6pwefm.streamlit.app/))
 
 > ⚠️ Replace the URL above with your actual app URL after deploying.
 
