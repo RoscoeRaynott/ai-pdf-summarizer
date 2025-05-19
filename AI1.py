@@ -8,6 +8,34 @@ Created on Sat May 17 21:32:59 2025
 import streamlit as st
 import PyPDF2
 import requests
+import math
+import time
+
+# Break text into manageable chunks
+def chunk_text(text, max_words=1200):
+    words = text.split()
+    return [" ".join(words[i:i + max_words]) for i in range(0, len(words), max_words)]
+
+# Summarize large text by chunking and combining results
+def summarize_in_chunks(text, style, language, length):
+    st.info("Splitting the document into chunks...")
+    chunks = chunk_text(text)
+    summaries = []
+    progress_bar = st.progress(0)
+
+    for i, chunk in enumerate(chunks):
+        prompt = build_prompt(chunk, style, language, length)
+        try:
+            summary = query_llm(prompt)
+            summaries.append(f"**Chunk {i+1} Summary:**\n{summary}")
+        except Exception as e:
+            summaries.append(f"**Chunk {i+1} Failed:** {str(e)}")
+        
+        progress_bar.progress((i + 1) / len(chunks))
+        time.sleep(1)  # Avoid rate limit
+
+    st.success("✅ Summarization complete!")
+    return "\n\n---\n\n".join(summaries)
 
 # Set your OpenRouter API key here
 API_KEY = "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"#"YOUR_OPENROUTER_API_KEY"
@@ -83,13 +111,15 @@ def build_prompt(text, style, language, length):
 if uploaded_file is not None:
     with st.spinner("Extracting text..."):
         text = extract_text_from_pdf(uploaded_file)
+        '''
         if len(text) > 5000:
             st.warning("PDF is long. Truncating to 5000 characters.")
             text = text[:5000]
-
+            '''
     if st.button("🧠 Summarize"):
         with st.spinner("Querying the LLM..."):
-            prompt = build_prompt(text, style, language, length)
-            summary = query_llm(prompt)
+            summary = summarize_in_chunks(text, style, language, length)
             st.subheader(f"📝 Summary ({language}, {style}, {length})")
             st.write(summary)
+
+
