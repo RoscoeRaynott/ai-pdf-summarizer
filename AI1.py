@@ -42,7 +42,7 @@ def summarize_in_chunks(text, style, language, length):
     return "\n\n---\n\n".join(summaries)
 
 # Set your OpenRouter API key here
-API_KEY = "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"#"YOUR_OPENROUTER_API_KEY"
+API_KEY =  st.secrets["OPENROUTER_API_KEY"]#"YOUR_OPENROUTER_API_KEY"
 
 # Extract text from PDF
 def extract_text_from_pdf(file):
